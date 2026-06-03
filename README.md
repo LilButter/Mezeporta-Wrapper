@@ -5,7 +5,7 @@ _https://github.com/LilButter/Mezeporta_
 ###
 ## Server Setup
 
-Download the wrapper release package and place its contents in your Erupe server root beside `erupe-ce.exe` and `config.json`.
+Download the wrapper _https://github.com/LilButter/Mezeporta-Wrapper/releases_ and place its contents in your Erupe server root beside `erupe-ce.exe` and `config.json`.
 
 Expected server layout:
 
