@@ -149,7 +149,7 @@ GamePatch/
   4-Z/
 ```
 
-Put version-specific patch files under the matching branch and mode folder.
+Put version-specific patch files under the matching branch and version folder.
 
 ###
 ## BinCustom
