@@ -1,0 +1,11 @@
+{
+  "erupe_version": "9.3+",
+  "9.2ClientMode": "",
+  "MaxClientPatch": 1,
+  "SaveCacheFetch": true,
+  "MailFetch": true,
+  "DistributionFetch": true,
+  "ClientImagesHosting": true,
+  "MezeportaLogs": true,
+  "EnableBinCustom": false
+}

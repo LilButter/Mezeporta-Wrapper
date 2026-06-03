@@ -1,0 +1,54 @@
+{
+  "banners": [
+    { "src": "/ClientImages/launcher/banners/BannerWelcome.png", "link": "https://github.com/LilButter/Mezeporta" },
+    { "src": "/ClientImages/launcher/banners/BannerShow3.png", "link": "https://github.com/LilButter/Mezeporta" },
+    { "src": "/ClientImages/launcher/banners/BannerShow4.png", "link": "https://github.com/LilButter/Mezeporta" }
+  ],
+  "messages": [
+    {
+      "message": "Put your annoucement here!",
+      "date": 1751518800,
+      "link": "https://github.com/LilButter/Mezeporta",
+      "kind": 1
+    },
+    {
+      "message": "Feeling lost? - Click here for a guide!",
+      "date": 1739426400,
+      "link": "https://github.com/LilButter/Mezeporta",
+      "kind": 0
+    }
+  ],
+  "links": [
+    { "name": "Test2", "link": "https://github.com/LilButter/Mezeporta", "icon": "/ClientImages/launcher/icons/discord_icon.png" },
+    { "name": "Test2", "link": "https://github.com/LilButter/Mezeporta", "icon": "/ClientImages/launcher/icons/github_icon.png" },
+    { "name": "Test3", "link": "https://github.com/LilButter/Mezeporta", "icon": "/ClientImages/launcher/icons/youtube_icon.png" }
+  ],
+  "serverTag": "Mezeporta",
+  "background": "/ClientImages/launcher/background.jpg",
+  "cog": "/ClientImages/launcher/cog.png",
+  "capcom": "/ClientImages/launcher/capcom.png",
+  "button": "/ClientImages/launcher/btn-blue.png",
+  "headers": {
+    "online": "/ClientImages/launcher/headers/Online.png",
+    "forward": "/ClientImages/launcher/headers/Forward.png",
+    "g": "/ClientImages/launcher/headers/G.png",
+    "z": "/ClientImages/launcher/headers/Z.png",
+    "zz": "/ClientImages/launcher/headers/ZZ.png"
+  },
+  "dialog": "/ClientImages/launcher/dialog.jpg",
+  "server_patch": "/ClientImages/launcher/ServerPatch.png",
+  "ps4": {
+    "background": "/ClientImages/launcher/ps4/Background.png",
+    "button": "/ClientImages/launcher/ps4/Button.png",
+    "capcom": "/ClientImages/launcher/ps4/capcom.png",
+    "cog": "/ClientImages/launcher/ps4/cog.png",
+    "emblem": "/ClientImages/launcher/ps4/Emblem.png",
+    "headers": {
+      "online": "/ClientImages/launcher/headers/PS4/Online.png",
+      "forward": "/ClientImages/launcher/headers/PS4/Forward.png",
+      "g": "/ClientImages/launcher/headers/PS4/G.png",
+      "z": "/ClientImages/launcher/headers/PS4/Z.png",
+      "zz": "/ClientImages/launcher/headers/PS4/ZZ.png"
+    }
+  }
+}
