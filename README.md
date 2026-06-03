@@ -1,11 +1,11 @@
-Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe` and exposes the launcher data used by Mezeporta.
+Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe`/`erupe-ce` and exposes the launcher data used by Mezeporta Launcher.
 
 _https://github.com/LilButter/Mezeporta_
 
 ###
 ## Server Setup
 
-Download the wrapper _https://github.com/LilButter/Mezeporta-Wrapper/releases_ and place its contents in your Erupe server root beside `erupe-ce.exe` and `config.json`.
+Download the wrapper _https://github.com/LilButter/Mezeporta-Wrapper/releases_ and place its contents in your Erupe server root beside `erupe-ce.exe`/`erupe-ce` and `config.json`.
 
 Expected server layout:
 
@@ -27,6 +27,23 @@ Do not start `erupe-ce.exe` separately while using the wrapper. The wrapper star
 
 Make sure the Erupe API is enabled in `config.json`.
 
+###
+## Wrapper Config
+
+`MezeportaWrapper.json` controls the wrapper's behavior.
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `erupe_version` | `9.3+` | Use `9.3+` for the latest Erupe server release. Use `9.2.1` or `9.2` for Legacy support |
+| `9.2ClientMode` | `""` | Client mode for legacy `Erupe9.2` servers. Leave blank unless you are using a legacy `Erupe9.2` server ONLY NOT 9.2.1. |
+| `MaxClientPatch` | `1` | Maximum amount of Users that can download the gamepatch at the same time. |
+| `SaveCacheFetch` | `true` | Enables savedata cache data for the launcher character book. |
+| `MailFetch` | `true` | Enables launcher mail data. |
+| `DistributionFetch` | `true` | Enables unclaimed distribution data. |
+| `ClientImagesHosting` | `true` | Serves `/ClientImages/...` from the local `ClientImages/` folder. Set to `false` if your images are hosted somewhere else. |
+| `MezeportaLogs` | `true` | Enables wrapper logging. |
+| `EnableBinCustom` | `false` | Checks `BinCustom/` before falling back to Erupe `bin/`. |
+
 ### 
 ## What It Provides
 
@@ -40,30 +57,9 @@ Make sure the Erupe API is enabled in `config.json`.
 - Optional `BinCustom/` overrides.
 
 ###
-## Wrapper Config
-
-`MezeportaWrapper.json` controls wrapper behavior.
-
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `erupe_version` | `9.3+` | Erupe API/database layout. Use `9.3+` for current Erupe, or `9.2.1` / `9.2` for older servers. |
-| `9.2ClientMode` | `""` | Client mode fallback for older 9.2 server setups. Leave blank unless your 9.2 server needs it. |
-| `MaxClientPatch` | `1` | Maximum patch downloads the wrapper lets through at one time. |
-| `SaveCacheFetch` | `true` | Enables savedata cache data for the launcher character book. |
-| `MailFetch` | `true` | Enables launcher mail data. |
-| `DistributionFetch` | `true` | Enables unclaimed distribution data. |
-| `ClientImagesHosting` | `true` | Serves `/ClientImages/...` from the local `ClientImages/` folder. Set to `false` if your images are hosted somewhere else. |
-| `MezeportaLogs` | `true` | Enables wrapper logging. |
-| `EnableBinCustom` | `false` | Checks `BinCustom/` before falling back to Erupe `bin/`. |
-
-When `SaveCacheFetch`, `MailFetch`, or `DistributionFetch` are disabled, the wrapper stops exposing that data to the launcher. The launcher will not show the matching character book, mail, or distribution data.
-
-###
 ## Launcher Metadata
 
-`Mezeporta.json` controls what the launcher displays for the server.
-
-The wrapper reads this file and merges it into the `/launcher` and `/v2/launcher` response.
+`Mezeporta.json` controls the images displayed on the Launcher for your server.
 
 | Key | Purpose |
 | --- | --- |
@@ -180,9 +176,3 @@ Linux native:
 ```bash
 go build -o Target/Mezeporta-ce
 ```
-
-The Windows wrapper checks for `erupe-ce.exe` first, then `erupe-ce`.
-
-The Linux wrapper checks for `erupe-ce`.
-
-The built `Wrapper/Target/` folder is the same layout used by the release package.
