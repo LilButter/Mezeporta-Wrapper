@@ -2,18 +2,6 @@ Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe` and e
 
 _https://github.com/LilButter/Mezeporta_
 
-### 
-## What It Provides
-
-- Launcher metadata from `Mezeporta.json`.
-- Patch hosting from `GamePatch/`.
-- Optional ClientImages hosting from `ClientImages/`.
-- Savedata cache endpoints.
-- Mail endpoints.
-- Distribution endpoints.
-- Event endpoints.
-- Optional `BinCustom/` overrides.
-
 ###
 ## Server Setup
 
@@ -38,6 +26,18 @@ Start `Mezeporta-ce.exe`.
 Do not start `erupe-ce.exe` separately while using the wrapper. The wrapper starts Erupe and proxies the launcher API.
 
 Make sure the Erupe API is enabled in `config.json`.
+
+### 
+## What It Provides
+
+- Launcher metadata from `Mezeporta.json`.
+- Patch hosting from `GamePatch/`.
+- Optional ClientImages hosting from `ClientImages/`.
+- Savedata cache endpoints.
+- Mail endpoints.
+- Distribution endpoints.
+- Event endpoints.
+- Optional `BinCustom/` overrides.
 
 ###
 ## Wrapper Config
