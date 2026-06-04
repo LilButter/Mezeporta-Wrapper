@@ -1,11 +1,9 @@
-Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe`/`erupe-ce` and exposes the launcher data used by Mezeporta Launcher.
-
-_https://github.com/LilButter/Mezeporta_
+Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe`/`erupe-ce` and exposes the launcher data used by [Mezeporta Launcher](https://github.com/LilButter/Mezeporta).
 
 ###
 ## Server Setup
 
-Download the wrapper _https://github.com/LilButter/Mezeporta-Wrapper/releases_ and place its contents in your Erupe server root beside `erupe-ce.exe`/`erupe-ce` and `config.json`.
+Download the [Wrapper](https://github.com/LilButter/Mezeporta-Wrapper/releases) and place its contents in your Erupe server root beside `erupe-ce.exe`/`erupe-ce` and `config.json`.
 
 Expected server layout:
 
