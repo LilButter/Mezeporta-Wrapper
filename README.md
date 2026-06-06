@@ -3,6 +3,9 @@ Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe`/`erup
 ###
 ## Server Setup
 
+> [!IMPORTANT]
+> Make sure you are on [Erupe](https://github.com/Mezeporta/Erupe/releases) 9.3.0 or above (9.3b is not supported) Legacy 9.2.1 and 9.2 are supported.
+
 Download the [Wrapper](https://github.com/LilButter/Mezeporta-Wrapper/releases) and place its contents in your Erupe server root beside `erupe-ce.exe`/`erupe-ce` and `config.json`.
 
 Expected server layout:
