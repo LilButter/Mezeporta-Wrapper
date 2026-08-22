@@ -294,7 +294,7 @@ func (a *app) handleDashboardStats(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if !a.isLegacyLayout() {
+	if !a.isLegacyLayout() && !a.is93Beta() {
 		resp, body, err := a.executeUpstreamRequest(r.Context(), r.Method, r.URL.Path, r.URL.RawQuery, nil, r.Header)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, "upstream_unavailable", "Upstream API is unavailable")
@@ -319,7 +319,7 @@ func (a *app) handleLauncher(w http.ResponseWriter, r *http.Request) {
 	}
 
 	upstreamPath := r.URL.Path
-	if a.isLegacyLayout() && r.URL.Path == "/v2/launcher" {
+	if a.usesLegacyHTTPRoutes() && r.URL.Path == "/v2/launcher" {
 		upstreamPath = "/launcher"
 	}
 
@@ -410,7 +410,7 @@ func (a *app) handleAuth(w http.ResponseWriter, r *http.Request, isLogin bool) {
 	}
 
 	upstreamPath := r.URL.Path
-	if a.isLegacyLayout() {
+	if a.usesLegacyHTTPRoutes() {
 		switch r.URL.Path {
 		case "/v2/login":
 			upstreamPath = "/login"
@@ -464,6 +464,12 @@ func (a *app) handleAuth(w http.ResponseWriter, r *http.Request, isLogin bool) {
 	if err := json.Unmarshal(respBody, &payload); err != nil {
 		copyUpstreamResponse(w, resp, respBody)
 		return
+	}
+	if a.is93Beta() {
+		markReturning(payload.Characters)
+		if payload.Courses == nil {
+			payload.Courses = legacyCourseListFromRights(payload.User.Rights)
+		}
 	}
 	payload, err = a.wrapModernAuthPayload(r.Context(), payload, publicBase)
 	if err != nil {
@@ -557,6 +563,46 @@ func (a *app) createLegacyCharacter(ctx context.Context, token string) (authChar
 	}
 	character, err := a.legacyCharacterByID(ctx, userID, created.ID)
 	return character, http.StatusOK, resp.Header, err
+}
+
+func (a *app) create93BetaCharacter(ctx context.Context, token string) (authCharacter, int, http.Header, error) {
+	requestBody, _ := json.Marshal(map[string]string{"token": token})
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json")
+	resp, respBody, err := a.executeUpstreamRequest(ctx, http.MethodPost, "/character/create", "", requestBody, headers)
+	if err != nil {
+		return authCharacter{}, http.StatusBadGateway, http.Header{}, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := strings.TrimSpace(string(respBody))
+		if message == "" {
+			message = "Upstream API is unavailable"
+		}
+		return authCharacter{}, resp.StatusCode, resp.Header, errors.New(message)
+	}
+	var character authCharacter
+	if err := json.Unmarshal(respBody, &character); err != nil {
+		return authCharacter{}, http.StatusInternalServerError, resp.Header, err
+	}
+	return character, http.StatusOK, resp.Header, nil
+}
+
+func (a *app) delete93BetaCharacter(ctx context.Context, token string, charID uint32) (int, http.Header, error) {
+	requestBody, _ := json.Marshal(map[string]any{"token": token, "charId": charID})
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json")
+	resp, respBody, err := a.executeUpstreamRequest(ctx, http.MethodPost, "/character/delete", "", requestBody, headers)
+	if err != nil {
+		return http.StatusBadGateway, http.Header{}, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := strings.TrimSpace(string(respBody))
+		if message == "" {
+			message = "Upstream API is unavailable"
+		}
+		return resp.StatusCode, resp.Header, errors.New(message)
+	}
+	return http.StatusOK, resp.Header, nil
 }
 
 func (a *app) handleCharacterDelete(w http.ResponseWriter, r *http.Request) {
@@ -669,7 +715,7 @@ func (a *app) handleCharacterExport(w http.ResponseWriter, r *http.Request) {
 func (a *app) handleCharactersCollection(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			a.proxy.ServeHTTP(w, r)
 			return
 		}
@@ -678,14 +724,19 @@ func (a *app) handleCharactersCollection(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or expired token")
 			return
 		}
-		characters, err := a.legacyCharactersForUser(r.Context(), userID)
+		var characters []authCharacter
+		if a.is93Beta() {
+			characters, err = a.modernCharactersForUser(r.Context(), userID)
+		} else {
+			characters, err = a.legacyCharactersForUser(r.Context(), userID)
+		}
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
 			return
 		}
 		writeJSONResponse(w, http.StatusOK, http.Header{}, characters)
 	case http.MethodPost:
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, "invalid_request", "Malformed request body")
@@ -704,7 +755,14 @@ func (a *app) handleCharactersCollection(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or expired token")
 			return
 		}
-		character, statusCode, headers, err := a.createLegacyCharacter(r.Context(), token)
+		var character authCharacter
+		var statusCode int
+		var headers http.Header
+		if a.is93Beta() {
+			character, statusCode, headers, err = a.create93BetaCharacter(r.Context(), token)
+		} else {
+			character, statusCode, headers, err = a.createLegacyCharacter(r.Context(), token)
+		}
 		if err != nil {
 			writeError(w, statusCode, "internal_error", err.Error())
 			return
@@ -757,7 +815,7 @@ func (a *app) handleCharactersItem(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSONResponse(w, http.StatusOK, http.Header{}, character)
 	case suffix == "delete" && (r.Method == http.MethodDelete || r.Method == http.MethodPost):
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, "invalid_request", "Malformed request body")
@@ -776,14 +834,20 @@ func (a *app) handleCharactersItem(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or expired token")
 			return
 		}
-		statusCode, headers, err := a.deleteLegacyCharacter(r.Context(), token, charID)
+		var statusCode int
+		var headers http.Header
+		if a.is93Beta() {
+			statusCode, headers, err = a.delete93BetaCharacter(r.Context(), token, charID)
+		} else {
+			statusCode, headers, err = a.deleteLegacyCharacter(r.Context(), token, charID)
+		}
 		if err != nil {
 			writeError(w, statusCode, "internal_error", err.Error())
 			return
 		}
 		writeJSONResponse(w, http.StatusOK, headers, map[string]any{})
 	case suffix == "" && r.Method == http.MethodDelete:
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, "invalid_request", "Malformed request body")
@@ -802,14 +866,20 @@ func (a *app) handleCharactersItem(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or expired token")
 			return
 		}
-		statusCode, headers, err := a.deleteLegacyCharacter(r.Context(), token, charID)
+		var statusCode int
+		var headers http.Header
+		if a.is93Beta() {
+			statusCode, headers, err = a.delete93BetaCharacter(r.Context(), token, charID)
+		} else {
+			statusCode, headers, err = a.deleteLegacyCharacter(r.Context(), token, charID)
+		}
 		if err != nil {
 			writeError(w, statusCode, "internal_error", err.Error())
 			return
 		}
 		writeJSONResponse(w, http.StatusOK, headers, map[string]any{})
 	case suffix == "" && r.Method == http.MethodGet:
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			a.proxy.ServeHTTP(w, r)
 			return
 		}
@@ -818,7 +888,12 @@ func (a *app) handleCharactersItem(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or expired token")
 			return
 		}
-		character, err := a.legacyCharacterByID(r.Context(), userID, charID)
+		var character authCharacter
+		if a.is93Beta() {
+			character, err = a.modernCharacterByID(r.Context(), userID, charID)
+		} else {
+			character, err = a.legacyCharacterByID(r.Context(), userID, charID)
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(w, http.StatusNotFound, "not_found", "Character not found")
 			return
@@ -864,7 +939,7 @@ func (a *app) handleAltClientStats(w http.ResponseWriter, r *http.Request) {
 		if a.wrapperConfig.DistributionFetch {
 			unclaimedDistributions, unclaimedDistributionTotal, err = a.altClientUnclaimedDistributions(r.Context(), row.ID, 6, 0)
 			if err != nil {
-				if !a.isLegacyLayout() {
+				if !a.isLegacyLayout() && !a.is93Beta() {
 					writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
 					return
 				}
@@ -878,7 +953,7 @@ func (a *app) handleAltClientStats(w http.ResponseWriter, r *http.Request) {
 		if a.wrapperConfig.MailFetch {
 			unreadMails, err = a.altClientUnreadMails(r.Context(), row.ID)
 			if err != nil {
-				if !a.isLegacyLayout() {
+				if !a.isLegacyLayout() && !a.is93Beta() {
 					writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
 					return
 				}
@@ -905,7 +980,7 @@ func (a *app) handleAltClientStats(w http.ResponseWriter, r *http.Request) {
 
 	onlineFriends, err := a.altClientOnlineFriends(r.Context(), charRows)
 	if err != nil {
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
 			return
 		}
@@ -996,7 +1071,7 @@ func (a *app) handleAltClientCharacterDistributions(w http.ResponseWriter, r *ht
 	offset := parseAltClientDistributionPageValue(r.URL.Query().Get("offset"), 0, 0)
 	entries, total, err := a.altClientUnclaimedDistributions(r.Context(), charID, limit, offset)
 	if err != nil {
-		if !a.isLegacyLayout() {
+		if !a.isLegacyLayout() && !a.is93Beta() {
 			writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
 			return
 		}

@@ -86,6 +86,8 @@ func ResolveProfile(version string) (Profile, error) {
 	switch strings.TrimSpace(version) {
 	case "", "9.3+":
 		return Modern(), nil
+	case "9.3b", "9.3-beta", "9.3.0-beta":
+		return Erupe93Beta(), nil
 	case "9.2.1":
 		return Erupe921(), nil
 	case "9.2":

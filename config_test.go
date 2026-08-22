@@ -163,3 +163,18 @@ func TestWriteDerivedUpstreamConfigIncludesEnableBinCustom(t *testing.T) {
 		t.Fatalf("BinPath = %#v, want %q", cfg["BinPath"], wantBinPath)
 	}
 }
+
+func TestResolve93BetaProfile(t *testing.T) {
+	for _, version := range []string{"9.3b", "9.3-beta", "9.3.0-beta"} {
+		profile, err := layouts.ResolveProfile(version)
+		if err != nil {
+			t.Fatalf("ResolveProfile(%q) returned error: %v", version, err)
+		}
+		if profile.Name() != "9.3b" {
+			t.Fatalf("ResolveProfile(%q).Name() = %q, want 9.3b", version, profile.Name())
+		}
+		if profile.ReadyPath() != "/launcher" {
+			t.Fatalf("ResolveProfile(%q).ReadyPath() = %q, want /launcher", version, profile.ReadyPath())
+		}
+	}
+}

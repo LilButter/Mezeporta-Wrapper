@@ -345,6 +345,37 @@ func (a *app) legacyCharacterByID(ctx context.Context, userID uint32, charID uin
 	return character, nil
 }
 
+func (a *app) modernCharactersForUser(ctx context.Context, userID uint32) ([]authCharacter, error) {
+	characters := make([]authCharacter, 0)
+	err := a.db.SelectContext(ctx, &characters, `
+		SELECT id, name, is_female, weapon_type, hr, gr, last_login
+		FROM characters
+		WHERE user_id = $1 AND deleted = false AND is_new_character = false
+		ORDER BY id ASC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	markReturning(characters)
+	return characters, nil
+}
+
+func (a *app) modernCharacterByID(ctx context.Context, userID uint32, charID uint32) (authCharacter, error) {
+	var character authCharacter
+	err := a.db.GetContext(ctx, &character, `
+		SELECT id, name, is_female, weapon_type, hr, gr, last_login
+		FROM characters
+		WHERE user_id = $1 AND id = $2 AND deleted = false AND is_new_character = false
+		LIMIT 1
+	`, userID, charID)
+	if err != nil {
+		return character, err
+	}
+	ninetyDaysAgo := time.Now().Add(-90 * 24 * time.Hour)
+	character.Returning = time.Unix(int64(character.LastLogin), 0).Before(ninetyDaysAgo)
+	return character, nil
+}
+
 func (a *app) exportCharacterData(ctx context.Context, userID uint32, charID uint32) (map[string]any, error) {
 	var character map[string]any
 	err := a.db.QueryRowContext(ctx, `
@@ -1020,7 +1051,7 @@ func (a *app) altClientUnreadMails(ctx context.Context, charID uint32) ([]altCli
 		WHERE m.recipient_id = $1 AND m.deleted = false AND m.read = false
 		ORDER BY m.created_at DESC
 	`
-	if a.isLegacyLayout() {
+	if a.isLegacyLayout() || a.is93Beta() {
 		query = `
 			SELECT
 				COALESCE(m.sender_id, 0) AS sender_id,

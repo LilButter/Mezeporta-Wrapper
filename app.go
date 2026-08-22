@@ -129,6 +129,20 @@ func (a *app) isLegacyLayout() bool {
 	}
 }
 
+// 9.3 beta is intentionally not a legacy database/auth
+func (a *app) usesLegacyHTTPRoutes() bool {
+	switch a.profile.Name() {
+	case "9.2", "9.2.1", "9.3b":
+		return true
+	default:
+		return false
+	}
+}
+
+func (a *app) is93Beta() bool {
+	return a.profile.Name() == "9.3b"
+}
+
 func (a *app) publicListenAddr() string {
 	return fmt.Sprintf(":%d", a.publicPort)
 }
