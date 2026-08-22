@@ -4,7 +4,7 @@ Mezeporta Wrapper is a wrapper for Erupe servers. It starts `erupe-ce.exe`/`erup
 ## Server Setup
 
 > [!IMPORTANT]
-> Make sure you are on [Erupe](https://github.com/Mezeporta/Erupe/releases) 9.3.0 or above (9.3b is not supported) Legacy 9.2.1 and 9.2 are supported.
+> Make sure you are on [Erupe](https://github.com/Mezeporta/Erupe/releases) 9.3.0 or above. Legacy 9.3b, 9.2.1, and 9.2 are supported.
 
 Download the [Wrapper](https://github.com/LilButter/Mezeporta-Wrapper/releases) and place its contents in your Erupe server root beside `erupe-ce.exe`/`erupe-ce` and `config.json`.
 
@@ -35,8 +35,8 @@ Make sure the Erupe API is enabled in `config.json`.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `erupe_version` | `9.3+` | Use `9.3+` for the latest Erupe server release. Use `9.2.1` or `9.2` for Legacy support |
-| `9.2ClientMode` | `""` | Client mode for legacy `Erupe9.2` servers. Leave blank unless you are using a legacy `Erupe9.2` server ONLY NOT 9.2.1. |
+| `erupe_version` | `9.3+` | Use `9.3+` for the latest Erupe server release. Use `9.3b`, `9.2.1`, or `9.2` for Legacy support |
+| `9.2ClientMode` | `""` | Client mode for legacy `Erupe9.2` servers. Leave blank unless you are using a legacy `Erupe9.2` server |
 | `MaxClientPatch` | `1` | Maximum amount of Users that can download the gamepatch at the same time. |
 | `SaveCacheFetch` | `true` | Enables savedata cache data for the launcher character book. |
 | `MailFetch` | `true` | Enables launcher mail data. |
