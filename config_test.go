@@ -165,16 +165,99 @@ func TestWriteDerivedUpstreamConfigIncludesEnableBinCustom(t *testing.T) {
 }
 
 func TestResolve93BetaProfile(t *testing.T) {
-	for _, version := range []string{"9.3b", "9.3-beta", "9.3.0-beta"} {
-		profile, err := layouts.ResolveProfile(version)
-		if err != nil {
-			t.Fatalf("ResolveProfile(%q) returned error: %v", version, err)
+	profile, err := layouts.ResolveProfile("9.3b")
+	if err != nil {
+		t.Fatalf("ResolveProfile(9.3b) returned error: %v", err)
+	}
+	if profile.Name() != "9.3b" {
+		t.Fatalf("ResolveProfile(9.3b).Name() = %q, want 9.3b", profile.Name())
+	}
+	if profile.ReadyPath() != "/launcher" {
+		t.Fatalf("ResolveProfile(9.3b).ReadyPath() = %q, want /launcher", profile.ReadyPath())
+	}
+}
+
+func TestDeriveRightsAndCoursesGuaranteesHunterLife(t *testing.T) {
+	rights, courses := deriveRightsAndCourses(0, nil)
+	if rights&4 == 0 {
+		t.Fatalf("expected HunterLife bit (4) in rights, got %d", rights)
+	}
+	var hasHL bool
+	for _, c := range courses {
+		if c.ID == 2 {
+			hasHL = true
+			break
 		}
-		if profile.Name() != "9.3b" {
-			t.Fatalf("ResolveProfile(%q).Name() = %q, want 9.3b", version, profile.Name())
-		}
-		if profile.ReadyPath() != "/launcher" {
-			t.Fatalf("ResolveProfile(%q).ReadyPath() = %q, want /launcher", version, profile.ReadyPath())
+	}
+	if !hasHL {
+		t.Fatal("expected HunterLife course (ID 2) in courses list")
+	}
+}
+
+func TestDeriveRightsAndCoursesWithDefaultCourses(t *testing.T) {
+	rights, courses := deriveRightsAndCourses(0, []uint16{1, 2, 3, 23, 24})
+	expectedBits := uint32(2 | 4 | 8 | (1 << 23) | (1 << 24))
+	if rights&expectedBits != expectedBits {
+		t.Fatalf("expected bits %d in rights, got %d", expectedBits, rights)
+	}
+	if len(courses) != 5 {
+		t.Fatalf("expected 5 courses, got %d", len(courses))
+	}
+}
+
+func TestWrapModernAuthPayloadNormalizesRightsAndHR(t *testing.T) {
+	a := &app{
+		baseConfig: baseConfig{
+			DebugOptions: layouts.DebugOptionsConfig{
+				MaxLauncherHR: false,
+			},
+			DefaultCourses: []uint16{1, 2, 3},
+		},
+		wrapperConfig: defaultWrapperConfig(),
+	}
+
+	payload := authData{
+		User: authUser{
+			TokenID: 1,
+			Token:   "test-token",
+			Rights:  0,
+		},
+		Characters: []authCharacter{
+			{ID: 1, Name: "GRHunter", HR: 7, GR: 999},
+			{ID: 2, Name: "NewbieHunter", HR: 1, GR: 0},
+			{ID: 3, Name: "HighRankHunter", HR: 7, GR: 0},
+		},
+	}
+
+	wrapped, err := a.wrapModernAuthPayload(nil, payload, "http://127.0.0.1:18080")
+	if err != nil {
+		t.Fatalf("wrapModernAuthPayload returned error: %v", err)
+	}
+
+	if wrapped.User.Rights&4 == 0 {
+		t.Fatalf("expected HunterLife bit (4) in wrapped user rights, got %d", wrapped.User.Rights)
+	}
+
+	if wrapped.Characters[0].HR != 999 {
+		t.Fatalf("expected GRHunter HR = 999, got %d", wrapped.Characters[0].HR)
+	}
+
+	if wrapped.Characters[1].HR != 1 {
+		t.Fatalf("expected NewbieHunter HR = 1, got %d", wrapped.Characters[1].HR)
+	}
+
+	if wrapped.Characters[2].HR != 999 {
+		t.Fatalf("expected HighRankHunter HR = 999, got %d", wrapped.Characters[2].HR)
+	}
+
+	a.baseConfig.DebugOptions.MaxLauncherHR = true
+	wrappedMaxHR, err := a.wrapModernAuthPayload(nil, payload, "http://127.0.0.1:18080")
+	if err != nil {
+		t.Fatalf("wrapModernAuthPayload with MaxLauncherHR returned error: %v", err)
+	}
+	for _, char := range wrappedMaxHR.Characters {
+		if char.HR != 999 {
+			t.Fatalf("expected character %s to have HR = 999 when MaxLauncherHR is true, got %d", char.Name, char.HR)
 		}
 	}
 }

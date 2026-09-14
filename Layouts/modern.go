@@ -36,6 +36,7 @@ type DevModeOptionsConfig struct {
 }
 
 type DebugOptionsConfig struct {
+	MaxLauncherHR      bool `json:"MaxLauncherHR"`
 	DivaOverride       *int `json:"DivaOverride"`
 	FestaOverride      *int `json:"FestaOverride"`
 	TournamentOverride *int `json:"TournamentOverride"`
@@ -50,6 +51,7 @@ type GameplayOptionsConfig struct {
 }
 
 type BaseConfig struct {
+	DefaultCourses  []uint16              `json:"DefaultCourses"`
 	ClientMode      string                `json:"ClientMode"`
 	HideLoginNotice bool                  `json:"HideLoginNotice"`
 	LoginNotices    []string              `json:"LoginNotices"`
@@ -86,7 +88,7 @@ func ResolveProfile(version string) (Profile, error) {
 	switch strings.TrimSpace(version) {
 	case "", "9.3+":
 		return Modern(), nil
-	case "9.3b", "9.3-beta", "9.3.0-beta":
+	case "9.3b":
 		return Erupe93Beta(), nil
 	case "9.2.1":
 		return Erupe921(), nil

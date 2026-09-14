@@ -210,6 +210,19 @@ func (a *app) wrapModernAuthPayload(ctx context.Context, payload authData, publi
 	if strings.TrimSpace(payload.PatchServer) == "" {
 		payload.PatchServer = a.defaultPatchServer(publicBase)
 	}
+
+	effectiveRights, derivedCourses := deriveRightsAndCourses(payload.User.Rights, a.baseConfig.DefaultCourses)
+	payload.User.Rights = effectiveRights
+	if len(payload.Courses) == 0 {
+		payload.Courses = derivedCourses
+	}
+
+	for i := range payload.Characters {
+		if a.baseConfig.DebugOptions.MaxLauncherHR || payload.Characters[i].GR > 0 || payload.Characters[i].HR >= 7 {
+			payload.Characters[i].HR = 999
+		}
+	}
+
 	return payload, nil
 }
 
@@ -239,14 +252,16 @@ func (a *app) buildLegacyAuthPayload(ctx context.Context, token string, characte
 		expiryTS = uint32(authRow.ReturnExpires.Time.Unix())
 	}
 
+	effectiveRights, courses := deriveRightsAndCourses(authRow.Rights, a.baseConfig.DefaultCourses)
+
 	return authData{
 		CurrentTS:          currentTS,
 		ExpiryTS:           expiryTS,
 		EntranceCount:      1,
 		Notices:            a.legacyLoginNotices(),
-		User:               authUser{TokenID: authRow.UserID, Token: token, Rights: authRow.Rights},
+		User:               authUser{TokenID: authRow.UserID, Token: token, Rights: effectiveRights},
 		Characters:         characters,
-		Courses:            legacyCourseListFromRights(authRow.Rights),
+		Courses:            courses,
 		MezFes:             a.legacyMezFes(),
 		Friends:            friends,
 		PatchServer:        a.defaultPatchServer(publicBase),
@@ -467,9 +482,6 @@ func (a *app) handleAuth(w http.ResponseWriter, r *http.Request, isLogin bool) {
 	}
 	if a.is93Beta() {
 		markReturning(payload.Characters)
-		if payload.Courses == nil {
-			payload.Courses = legacyCourseListFromRights(payload.User.Rights)
-		}
 	}
 	payload, err = a.wrapModernAuthPayload(r.Context(), payload, publicBase)
 	if err != nil {
@@ -583,6 +595,9 @@ func (a *app) create93BetaCharacter(ctx context.Context, token string) (authChar
 	var character authCharacter
 	if err := json.Unmarshal(respBody, &character); err != nil {
 		return authCharacter{}, http.StatusInternalServerError, resp.Header, err
+	}
+	if a.baseConfig.DebugOptions.MaxLauncherHR || character.GR > 0 || character.HR >= 7 {
+		character.HR = 999
 	}
 	return character, http.StatusOK, resp.Header, nil
 }

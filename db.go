@@ -357,6 +357,11 @@ func (a *app) modernCharactersForUser(ctx context.Context, userID uint32) ([]aut
 		return nil, err
 	}
 	markReturning(characters)
+	for i := range characters {
+		if a.baseConfig.DebugOptions.MaxLauncherHR || characters[i].GR > 0 || characters[i].HR >= 7 {
+			characters[i].HR = 999
+		}
+	}
 	return characters, nil
 }
 
@@ -373,6 +378,9 @@ func (a *app) modernCharacterByID(ctx context.Context, userID uint32, charID uin
 	}
 	ninetyDaysAgo := time.Now().Add(-90 * 24 * time.Hour)
 	character.Returning = time.Unix(int64(character.LastLogin), 0).Before(ninetyDaysAgo)
+	if a.baseConfig.DebugOptions.MaxLauncherHR || character.GR > 0 || character.HR >= 7 {
+		character.HR = 999
+	}
 	return character, nil
 }
 
@@ -392,7 +400,7 @@ func (a *app) exportCharacterData(ctx context.Context, userID uint32, charID uin
 
 func (a *app) altLauncherFriendsForCharacters(ctx context.Context, chars []authCharacter) ([]altLauncherFriend, error) {
 	friends := make([]altLauncherFriend, 0)
-	if len(chars) == 0 {
+	if len(chars) == 0 || a.db == nil {
 		return friends, nil
 	}
 
@@ -782,40 +790,64 @@ func legacyWeekNext() time.Time {
 	return legacyWeekStart().Add(time.Hour * 24 * 7)
 }
 
-func legacyCourseListFromRights(rights uint32) []authCourse {
-	courses := []authCourse{{ID: 1, Name: legacyCourseNames[1]}}
+func deriveRightsAndCourses(rawRights uint32, defaultCourses []uint16) (uint32, []authCourse) {
+	activeCourseMap := make(map[uint16]bool)
+	for _, c := range defaultCourses {
+		activeCourseMap[c] = true
+	}
+
+	// HunterLife (course 2) is required for full land access.
+	activeCourseMap[2] = true
+
+	if len(defaultCourses) == 0 {
+		activeCourseMap[1] = true
+		activeCourseMap[3] = true
+	}
+
 	normalCafeCourseSet := false
 	netCafeCourseSet := false
-
 	for id := 31; id >= 0; id-- {
-		value := uint32(1) << uint(id)
-		if rights >= value {
+		val := uint32(1) << uint(id)
+		if rawRights&val != 0 {
+			activeCourseMap[uint16(id)] = true
 			switch uint16(id) {
 			case 26:
 				if !normalCafeCourseSet {
 					normalCafeCourseSet = true
-					courses = append(courses, authCourse{ID: 25, Name: legacyCourseNames[25]})
+					activeCourseMap[25] = true
 				}
-				fallthrough
 			case 9:
 				if !netCafeCourseSet {
 					netCafeCourseSet = true
-					courses = append(courses, authCourse{ID: 30, Name: legacyCourseNames[30]})
+					activeCourseMap[30] = true
 				}
+			case 10:
+				activeCourseMap[31] = true
 			}
-
-			courses = append(courses, authCourse{
-				ID:   uint16(id),
-				Name: legacyCourseNames[uint16(id)],
-			})
-			rights -= value
 		}
-
 		if id == 0 {
 			break
 		}
 	}
 
+	var rights uint32
+	var courses []authCourse
+	for id := uint16(0); id <= 31; id++ {
+		if activeCourseMap[id] {
+			rights |= (1 << id)
+			name := legacyCourseNames[id]
+			if name == "" {
+				name = fmt.Sprintf("Course%d", id)
+			}
+			courses = append(courses, authCourse{ID: id, Name: name})
+		}
+	}
+
+	return rights, courses
+}
+
+func legacyCourseListFromRights(rights uint32) []authCourse {
+	_, courses := deriveRightsAndCourses(rights, nil)
 	return courses
 }
 
